@@ -39,8 +39,48 @@ func CreateBook(ctx *gin.Context) {
 	}
 
 	// Create book
-	book := models.Book{Title: input.Title, Author: input.Author}
+	book := models.Book{}
+	book.Title = input.Title
+	book.Author = input.Author
 	models.DB.Create((&book))
 
 	ctx.JSON(http.StatusOK, gin.H{"data": book})
+}
+
+// PATCH /books/:id
+// Update a book
+func UpdateBook(ctx *gin.Context) {
+	// Check if the book exist
+	var book models.Book
+	err := models.DB.Where("id = ?", ctx.Param("id")).First(&book).Error
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
+		return
+	}
+
+	// Validate the update input
+	var input models.UpdateBookInput
+	err = ctx.ShouldBindJSON(&input)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	models.DB.Model(&book).Updates(input)
+
+	ctx.JSON(http.StatusOK, gin.H{"data": book})
+}
+
+// DELETE /books/:id
+// Delete a book
+func DeleteBook(ctx *gin.Context) {
+	var book models.Book
+	err := models.DB.Where("id = ?", ctx.Param("id")).First(&book).Error
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
+	}
+
+	models.DB.Delete(&book)
+
+	ctx.JSON(http.StatusOK, gin.H{"data": true})
 }
